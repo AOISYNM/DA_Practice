@@ -9,11 +9,14 @@ Requires model.pkl, vectorizer.pkl, label_map.pkl in the same folder
 (produced by running `python train.py --data <path-to-train.txt>` first).
 """
 
+import os
 import string
 import joblib
 import streamlit as st
 import nltk
 from nltk.tokenize import word_tokenize
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 @st.cache_resource
@@ -33,9 +36,9 @@ def load_nltk():
 
 @st.cache_resource
 def load_artifacts():
-    model = joblib.load("model.pkl")
-    vectorizer = joblib.load("vectorizer.pkl")
-    label_map = joblib.load("label_map.pkl")
+    model = joblib.load(os.path.join(BASE_DIR, "model.pkl"))
+    vectorizer = joblib.load(os.path.join(BASE_DIR, "vectorizer.pkl"))
+    label_map = joblib.load(os.path.join(BASE_DIR, "label_map.pkl"))
     inv_label_map = {v: k for k, v in label_map.items()}
     return model, vectorizer, inv_label_map
 
