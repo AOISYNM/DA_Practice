@@ -2,7 +2,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+import os
 from scipy.special import boxcox1p
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ----------------------------------------------------------------------
 # Page setup
@@ -16,12 +19,29 @@ FONT_CSS = """
 :root {
     --paper: #EBE5D6;
     --paper-raised: #F4F0E5;
+    --paper-input: #FFFFFF;
     --ink: #262319;
     --ink-soft: #5C5747;
     --brass: #A0702F;
     --brass-dark: #7C5423;
     --teal: #3E5C51;
     --line: #D7CDB4;
+    --shadow: rgba(38, 35, 25, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --paper: #1C1A15;
+        --paper-raised: #252219;
+        --paper-input: #2D2A20;
+        --ink: #ECE5D6;
+        --ink-soft: #B3AB94;
+        --brass: #D9A45C;
+        --brass-dark: #E4B36E;
+        --teal: #7FA595;
+        --line: #423D2E;
+        --shadow: rgba(0, 0, 0, 0.35);
+    }
 }
 
 html, body, [class*="css"]  {
@@ -31,6 +51,31 @@ html, body, [class*="css"]  {
 
 .stApp {
     background-color: var(--paper);
+}
+
+/* keep native widgets (inputs, selects, sliders) consistent with the palette
+   above regardless of Streamlit's own light/dark theme setting */
+div[data-baseweb="input"] input,
+div[data-baseweb="select"] > div,
+div[data-baseweb="base-input"],
+.stNumberInput input {
+    background-color: var(--paper-input) !important;
+    color: var(--ink) !important;
+    border-color: var(--line) !important;
+}
+div[data-baseweb="popover"] li {
+    background-color: var(--paper-input);
+    color: var(--ink);
+}
+label, .stSlider label, .stNumberInput label, .stSelectbox label {
+    color: var(--ink) !important;
+}
+.stSlider [role="slider"] {
+    background-color: var(--brass) !important;
+    border-color: var(--brass) !important;
+}
+.stSlider div[data-baseweb="slider"] > div > div {
+    background: var(--brass) !important;
 }
 
 h1, h2, h3, .estimate-figure {
@@ -77,10 +122,11 @@ h1, h2, h3, .estimate-figure {
 .estimate-card {
     background: var(--paper-raised);
     border: 1px solid var(--line);
-    border-radius: 2px;
+    border-radius: 3px;
     padding: 1.8rem 1.8rem 1.5rem 1.8rem;
     position: sticky;
     top: 1rem;
+    box-shadow: 0 2px 10px var(--shadow);
 }
 .estimate-card .tag {
     font-size: 0.78rem;
@@ -120,9 +166,10 @@ h1, h2, h3, .estimate-figure {
 /* form widget tweaks */
 div[data-testid="stForm"] {
     border: 1px solid var(--line);
-    border-radius: 2px;
+    border-radius: 3px;
     background: var(--paper-raised);
     padding: 1.6rem 1.8rem;
+    box-shadow: 0 2px 10px var(--shadow);
 }
 .stButton>button, div[data-testid="stFormSubmitButton"] button {
     background-color: var(--ink);
@@ -132,6 +179,7 @@ div[data-testid="stForm"] {
     font-family: 'IBM Plex Sans', sans-serif;
     font-weight: 500;
     padding: 0.55rem 1.4rem;
+    transition: background-color 0.15s ease;
 }
 .stButton>button:hover, div[data-testid="stFormSubmitButton"] button:hover {
     background-color: var(--brass-dark);
@@ -147,11 +195,19 @@ st.markdown(FONT_CSS, unsafe_allow_html=True)
 # ----------------------------------------------------------------------
 @st.cache_resource
 def load_artifacts():
-    model = joblib.load("model.joblib")
-    preprocessor = joblib.load("preprocessor.joblib")
+    model = joblib.load(os.path.join(BASE_DIR, "model.joblib"))
+    preprocessor = joblib.load(os.path.join(BASE_DIR, "preprocessor.joblib"))
     return model, preprocessor
 
-model, pp = load_artifacts()
+try:
+    model, pp = load_artifacts()
+except FileNotFoundError:
+    st.error(
+        "model.joblib / preprocessor.joblib not found next to app.py. "
+        "Make sure both files are in the same folder as this script, "
+        "then reboot the app."
+    )
+    st.stop()
 
 
 # ----------------------------------------------------------------------
